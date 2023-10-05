@@ -1,0 +1,13 @@
+Write-Host "Welcome! This script will help you to create and update lambda layers in aws"
+Write-Host "In this script a Python (3.8) package is bundled into a layer and then published to your aws account."
+Write-Host "The Prerequisites are: 1)Configured aws-cli 2)You have installed docker on your system 3)You have pip installed on your system"
+$package_name = Read-Host "Now, Enter the name of the python package that you want to install"
+$package_ver = Read-Host "Enter the package version:"
+mkdir ".\$package_name"
+New-Item -Path ".\$package_name" -Name "requirements.txt" -ItemType "file" -Value "$package_name==$package_ver"
+$location = Get-Location
+mkdir ".\${package_name}\python\lib\python3.8\site-packages"
+docker run -v $location\${package_name}:/var/task lambci/lambda:build-python3.8 bash -c "pip install -r requirements.txt -t python/lib/python3.8/site-packages; exit"
+Compress-Archive -Path ".\$package_name\python" -DestinationPath ".\$package_name.zip"
+$layer_name = Read-Host "Enter layer name:"
+aws lambda publish-layer-version --layer-name $layer_name --zip-file fileb://"$package_name.zip"
